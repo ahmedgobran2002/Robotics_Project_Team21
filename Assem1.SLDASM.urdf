@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="Assem1.SLDASM">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.0456798448416401 -0.0970556080358897 0.0605375011598095"
+        rpy="0 0 0" />
+      <mass
+        value="0.724103365528615" />
+      <inertia
+        ixx="0.000879152049469754"
+        ixy="1.52309899438194E-12"
+        ixz="-1.04221966042963E-05"
+        iyy="0.000958577840212581"
+        iyz="1.47263270797547E-12"
+        izz="0.00152359370447705" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.650980392156863 0.619607843137255 0.588235294117647 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Circularbase">
+    <inertial>
+      <origin
+        xyz="-0.0070575678960389 0.0194229347811668 1.03814223481602E-07"
+        rpy="0 0 0" />
+      <mass
+        value="0.0897213187915252" />
+      <inertia
+        ixx="7.72728720700263E-05"
+        ixy="7.96790903926847E-06"
+        ixz="2.77140502346761E-10"
+        iyy="7.06954475493946E-05"
+        iyz="-6.66096705160532E-11"
+        izz="6.69370927398783E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Circularbase.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Circularbase.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="1"
+    type="continuous">
+    <origin
+      xyz="0.0447905373553541 -0.0970556081876843 0.0881115838020881"
+      rpy="1.5707963267949 0 2.53847463663176" />
+    <parent
+      link="base_link" />
+    <child
+      link="Circularbase" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Arm1">
+    <inertial>
+      <origin
+        xyz="0.0700013354671581 0.0187477468976033 -4.54023480478405E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.137937115365771" />
+      <inertia
+        ixx="3.08307927957183E-05"
+        ixy="-1.24879015256783E-09"
+        ixz="8.20000232240026E-11"
+        iyy="0.00043171334269102"
+        iyz="1.00711483738974E-10"
+        izz="0.00041295747845244" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Arm1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Arm1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="2"
+    type="continuous">
+    <origin
+      xyz="-0.00844160317014499 0.0435500000000014 0"
+      rpy="3.14159265358962 1.56195622757274 1.57079632679473" />
+    <parent
+      link="Circularbase" />
+    <child
+      link="Arm1" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Arm2">
+    <inertial>
+      <origin
+        xyz="-0.0484068299830265 0.00192460450925183 -1.74036970113089E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.0997405624064097" />
+      <inertia
+        ixx="2.38167837438396E-05"
+        ixy="7.99932788970595E-07"
+        ixz="-2.47960724610776E-11"
+        iyy="0.00013197624667429"
+        iyz="3.5886655077121E-11"
+        izz="0.000118113624828546" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Arm2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Arm2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="3"
+    type="continuous">
+    <origin
+      xyz="0.140000000000003 0 0"
+      rpy="0 0.0434159166142557 -3.14159265358979" />
+    <parent
+      link="Arm1" />
+    <child
+      link="Arm2" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="Gripbase">
+    <inertial>
+      <origin
+        xyz="0.0244851267827614 0.0047925294520999 0.0088370344085361"
+        rpy="0 0 0" />
+      <mass
+        value="0.015576047707246" />
+      <inertia
+        ixx="2.5842281379324E-06"
+        ixy="-8.30846078232703E-07"
+        ixz="5.46124863566179E-07"
+        iyy="6.24792139594144E-06"
+        iyz="1.0013591146001E-08"
+        izz="4.87871303000745E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Gripbase.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Gripbase.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="4"
+    type="continuous">
+    <origin
+      xyz="-0.1314 0 0"
+      rpy="-1.5707963267949 -0.0864366181881726 -3.14159265358979" />
+    <parent
+      link="Arm2" />
+    <child
+      link="Gripbase" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Grip">
+    <inertial>
+      <origin
+        xyz="0.023110944466928 0.00709828596850978 -0.0420410516924354"
+        rpy="0 0 0" />
+      <mass
+        value="0.0296627284892431" />
+      <inertia
+        ixx="3.87388294225699E-06"
+        ixy="2.8181480923432E-08"
+        ixz="7.05516752493289E-07"
+        iyy="5.54198172342128E-06"
+        iyz="8.7735783661819E-09"
+        izz="2.58521645656118E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Grip.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Assem1.SLDASM/meshes/Grip.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="5"
+    type="continuous">
+    <origin
+      xyz="0 0 0"
+      rpy="0 -1.18533320577674 0" />
+    <parent
+      link="Gripbase" />
+    <child
+      link="Grip" />
+    <axis
+      xyz="0.926624403959254 0 0.375988316290755" />
+  </joint>
+</robot>

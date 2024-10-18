@@ -1,0 +1,47 @@
+def sysCall_init():
+    sim = require('sim')
+    
+    # Get handles for the joints of links 1, 2, and 3
+    self.q1_handle = sim.getObject("../1")
+    self.q2_handle = sim.getObject("../2")
+    self.q3_handle = sim.getObject("../3")
+    self.q4_handle = sim.getObject("../4")
+    # Set the target positions for each joint in radians
+    self.target_position1 = 90 * (3.14 / 180)  # 90 degrees for link 1
+    self.target_position2 = 45 * (3.14 / 180)  # 45 degrees for link 2 (you can modify as needed)
+    self.target_position3 = 60 * (3.14 / 180)  # 30 degrees for link 3 (you can modify as needed)
+    self.target_position4 = 90 * (3.14 / 180)
+    self.required_duration = 5  # Duration to complete the rotation
+
+def sysCall_actuation():
+    c_t = sim.getSimulationTime()  # Get current simulation time
+
+    # Calculate the new position for each joint
+    if c_t < self.required_duration:
+        new_position1 = (c_t / self.required_duration) * self.target_position1
+        new_position2 = (c_t / self.required_duration) * self.target_position2
+        new_position3 = (c_t / self.required_duration) * self.target_position3
+        new_position4 = (c_t / self.required_duration) * self.target_position4
+        # Set the new position for each joint
+        sim.setJointTargetPosition(self.q1_handle, new_position1)
+        sim.setJointTargetPosition(self.q2_handle, new_position2)
+        sim.setJointTargetPosition(self.q3_handle, new_position3)
+        sim.setJointTargetPosition(self.q4_handle, new_position4)
+    else:
+        # Set joints to final target positions
+        sim.setJointTargetPosition(self.q1_handle, self.target_position1)
+        sim.setJointTargetPosition(self.q2_handle, self.target_position2)
+        sim.setJointTargetPosition(self.q3_handle, self.target_position3)
+        sim.setJointTargetPosition(self.q4_handle, self.target_position4)
+def sysCall_sensing():
+    pass
+
+def sysCall_cleanup():
+    # Get position of end effector at cleanup
+    EHandle = sim.getObject("../Grip_respondable")
+    base_handle = sim.getObject("../base_link_visual/ReferenceFrame")
+    Eposition = sim.getObjectPosition(EHandle, base_handle)
+    
+    # Print the end effector position
+    print(Eposition)
+    pass
