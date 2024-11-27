@@ -1,0 +1,61 @@
+function T = forward_kinematics_func()
+    % Forward kinematics of a 4-DOF manipulator with symbolic joint angles
+
+    % Define symbolic variables for joint angles
+    syms q1 q2 q3 q4 real
+    %syms L1 L2 L3 L4 real
+    
+    %{
+    % Define constants for joints angles
+    q1 = deg2rad(90);  % Joint 1 angle (degrees to radians)
+    q2 = deg2rad(45);  % Joint 2 angle (degrees to radians)
+    q3 = deg2rad(60);  % Joint 3 angle (degrees to radians)
+    q4 = deg2rad(90);  % Joint 4 angle (degrees to radians)
+    %}
+      
+   % Define constants for link lengths
+    L1 = 33.88;  % Length of link 1
+    L2 = 115;    % Length of link 2
+    L3 = 119;    % Length of link 3
+    L4 = 68;     % Length of link 4
+    
+    %{
+    L1 = 43.55;
+    L2 = 115;
+    L3 = 120;
+    L4 = 68;
+    %}
+
+    % Define the homogeneous transformation matrices symbolically
+    A = [cos(q1 + pi/2), 0, -sin(q1 + pi/2), 0;
+         sin(q1 + pi/2), 0, cos(q1 + pi/2), 0;
+         0, -1, 0, L1;
+         0, 0, 0, 1];
+
+    B = [cos(q2 - pi/2), -sin(q2 - pi/2), 0, -L2 * cos(q2 - pi/2);
+         sin(q2 - pi/2), cos(q2 - pi/2), 0, -L2 * sin(q2 - pi/2);
+         0, 0, 1, 0;
+         0, 0, 0, 1];
+
+    C = [cos(q3), -sin(q3), 0, -L3 * cos(q3);
+         sin(q3), cos(q3), 0, -L3 * sin(q3);
+         0, 0, 1, 0;
+         0, 0, 0, 1];
+
+    D = [cos(q4), -sin(q4), 0, -L4 * cos(q4);
+         sin(q4), cos(q4), 0, -L4 * sin(q4);
+         0, 0, 1, 0;
+         0, 0, 0, 1];
+
+    % Calculate the overall symbolic transformation matrix
+    T = simplify(A * B * C * D);  % Simplify to get a cleaner symbolic expression
+    %T = A * B * C * D;
+    %disp(T);
+    
+    % Extract the position of the end effector (fourth column, first three rows)
+    end_effector_position = T(1:3, 4);
+    %disp(end_effector_position);
+
+    j = jacobian(end_effector_position,[q1,q2,q3,q4]);
+    %disp(j);
+end

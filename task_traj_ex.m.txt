@@ -1,0 +1,137 @@
+function Task_Space_1 = task_traj(X0, Xf, Tf, Ts)
+    % Define initial and final positions, total time, and sampling time
+    X0 = [180, 0, 45];   % Initial position
+    Xf = [0, 25, 2];     % Final position
+    Tf = 5;             % Total time (seconds)
+    Ts = 0.1;            % Sampling time (seconds)
+
+    % Time vector
+    timeSteps = 0:Ts:Tf;
+    
+    % Number of steps
+    nSteps = length(timeSteps);
+    
+    % Initialize trajectory data
+    trajectory = zeros(nSteps, 3);
+    joint_angles = zeros(nSteps, 4);
+
+    % Generate trajectory
+    for i = 1:nSteps
+        t = timeSteps(i) / Tf; 
+        trajectory(i, :) = (1 - t) * X0 + t * Xf; 
+    end
+
+    disp('Trajectory Points (Xf for each time step):');
+    disp(trajectory);
+
+    % Initial guess for joint angles
+    q0 = deg2rad([90; 45; 60; 90]);
+
+    % Calculate joint angles using inverse kinematics
+    for i = 1:nSteps
+        current_Xf = trajectory(i, :)'; 
+        joint_angles(i, :) = inverse_kinematics(q0, current_Xf); 
+    end
+
+    disp('Joint Angles (q) for each time step:');
+    disp(rad2deg(joint_angles)); % Display in degrees
+
+    
+    % Plot trajectory in 2D
+    figure(1);
+    plot(timeSteps, trajectory(:, 1), 'r', ...
+         timeSteps, trajectory(:, 2), 'g', ...
+         timeSteps, trajectory(:, 3), 'b');
+    xlabel('Time (s)');
+    ylabel('Position');
+    title('End-Effector Trajectory (X, Y, Z)');
+    legend('X', 'Y', 'Z');
+    grid on;
+
+    % Plot joint angles
+    figure(2);
+    plot(timeSteps, rad2deg(joint_angles));
+    xlabel('Time (s)');
+    ylabel('Joint Angles (degrees)');
+    title('Joint Angles Trajectory');
+    legend('q1', 'q2', 'q3', 'q4');
+    grid on;
+
+    % 3D trajectory plot and individual components
+    figure(3);
+
+    % 3D plot of trajectory
+    subplot(2, 2, 1);
+    plot3(trajectory(:, 1), trajectory(:, 2), trajectory(:, 3), '-o');
+    grid on;
+    xlabel('X (mm)');
+    ylabel('Y (mm)');
+    zlabel('Z (mm)');
+    title('3D End-Effector Trajectory');
+    view(3);
+
+    % X component
+    subplot(2, 2, 2);
+    plot(timeSteps, trajectory(:, 1), 'r');
+    xlabel('Time (s)');
+    ylabel('X Position (mm)');
+    title('X Trajectory');
+    grid on;
+
+    % Y component
+    subplot(2, 2, 3);
+    plot(timeSteps, trajectory(:, 2), 'g');
+    xlabel('Time (s)');
+    ylabel('Y Position (mm)');
+    title('Y Trajectory');
+    grid on;
+
+    % Z component
+    subplot(2, 2, 4);
+    plot(timeSteps, trajectory(:, 3), 'b');
+    xlabel('Time (s)');
+    ylabel('Z Position (mm)');
+    title('Z Trajectory');
+    grid on;
+end
+
+function q = inverse_kinematics(q0, x)
+    % Robot parameters (lengths of links, offsets, etc.)
+    L1 = 100;  % Link 1 length
+    L2 = 100;  % Link 2 length
+    L3 = 50;   % Link 3 length
+
+    % Initialize joint angles with the guess
+    q = q0;
+
+    % Extract the desired end-effector position
+    x_des = x(1);
+    y_des = x(2);
+    z_des = x(3);
+
+    % Inverse kinematics equations (example for a planar 4-DOF arm)
+
+    % Calculate the base joint (q1) using atan2
+    q(1) = atan2(y_des, x_des);  % Base joint
+    r = sqrt(x_des^2 + y_des^2); % Planar distance
+
+    % Calculate D for the elbow joint
+    D = (r^2 + (z_des - L1)^2 - L2^2 - L3^2) / (2 * L2 * L3);
+    
+    % Ensure D is in the range [-1, 1] for valid atan2 computation
+    if abs(D) > 1
+        D = sign(D);  % Clamp D to 1 or -1
+    end
+
+    % Elbow joint (q3)
+    q(3) = atan2(sqrt(1 - D^2), D);
+
+    % Shoulder joint (q2)
+    q(2) = atan2(z_des - L1, r) - atan2(L3 * sin(q(3)), L2 + L3 * cos(q(3)));
+
+    % Wrist joint (q4) - assuming it's aligned with the end-effector frame
+    q(4) = 0;
+
+    % Ensure joint angles are real (handle numerical errors)
+    q = real(q);
+end
