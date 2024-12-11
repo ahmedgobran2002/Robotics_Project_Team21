@@ -1,0 +1,22 @@
+ Tf = 9;
+ Ts = 0.2;
+ 
+ q0 = [ 0 ; 0 ; 0 ; 0];
+ qf = [5 * (pi/180); 75 * (pi/180); 80 * (pi/180); -60 * (pi/180)];
+ x0 = [0.0096; -0.0028; 0.4532];
+ xpickup1 = [-0.27; -0.0000; -0.005];
+ [q1_values11, q2_values21, q3_values31, q4_values41, totaltime1] = Trajectory(x0, xpickup1, Tf, Ts, q0, qf);
+ [q1_values12, q2_values22, q3_values32, q4_values42, totaltime2] = Trajectory(xpickup1, xDropoff1, Tf, Ts, q0 , qf);
+ [q1_values13, q2_values23, q3_values33, q4_values43, totaltime3] = Trajectory(xDropoff1, x0, Tf, Ts , q0 , qf);
+ totaltime2 = totaltime2 + totaltime1(end);
+ totaltime3 = totaltime3 + totaltime2(end);
+ q1_combined = [q1_values11; q1_values12; q1_values13];
+ q2_combined = [q2_values21; q2_values22; q2_values23];
+ q3_combined = [q3_values31; q3_values32; q3_values33];
+ q4_combined = [q4_values41; q4_values42; q4_values43];
+ totaltime_combined = [totaltime1, totaltime2, totaltime3];
+ q1input = timeseries(q1_combined, totaltime_combined);  
+ q2input = timeseries(q2_combined, totaltime_combined);
+ q3input = timeseries(q3_combined, totaltime_combined);
+ q4input = timeseries(q4_combined, totaltime_combined);
+sim('iteration3');

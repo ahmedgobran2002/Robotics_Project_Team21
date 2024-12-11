@@ -1,0 +1,334 @@
+from sympy import symbols, Matrix, cos, sin, eye, rad, lambdify
+import numpy as np
+import sympy as sp
+
+def sysCall_init():
+    sim = require('sim')
+    
+    # Handles for robot joints
+    self.joint_handles = [
+        sim.getObject("../1"),
+        sim.getObject("../2"),
+        sim.getObject("../3"),
+        sim.getObject("../4"),
+    ]
+    
+    # Duration for executing the trajectory
+    self.duration = 31  # Total time to execute trajectory (seconds)
+
+    # DH parameters
+    Q1, Q2, Q3, Q4 = symbols('Q1 Q2 Q3 Q4')
+    L1, L2, L3, L4 = 0.033, 0.140, 0.1315, 0.068
+    alpha = [90, 0, 0, 0]
+    a = [0, -L2, -L3, L4]
+    d = [L1, 0, 0, 0]
+    Q = [Q1, Q2, Q3, Q4]
+    
+    # Helper functions
+    def transformation_func(q, d, a, alpha):
+        alpha_rad = alpha * rad(1)  # Convert alpha to radians
+        T = Matrix([
+            [cos(q), -sin(q) * cos(alpha_rad), sin(q) * sin(alpha_rad), a * cos(q)],
+            [sin(q), cos(q) * cos(alpha_rad), -cos(q) * sin(alpha_rad), a * sin(q)],
+            [0, sin(alpha_rad), cos(alpha_rad), d],
+            [0, 0, 0, 1]
+        ])
+        return T
+
+    def forward_kinematics_func(Q, d, a, alpha):
+        T_total = eye(4)
+        for i in range(len(Q)):
+            T = transformation_func(Q[i], d[i], a[i], alpha[i])
+            T_total = T_total * T
+        return T_total[:3, 3]  # Return end-effector position [X, Y, Z]
+
+    def jacobian_matrix(Q, d, a, alpha):
+        position_vector = forward_kinematics_func(Q, d, a, alpha)
+        J = position_vector.jacobian(Q)
+        return J
+
+    def inverse_jacobian(Q_values):
+        J_numeric = np.array(jacobian_numeric(*Q_values), dtype=np.float64)
+        return np.linalg.pinv(J_numeric)
+
+   # def wrap_to_180(angles):
+    #    return (angles + 180) % 360 - 180
+
+    # Convert symbolic expressions to numerical functions
+    position_vector = forward_kinematics_func(Q, d, a, alpha)
+    Jacobian = position_vector.jacobian(Q)
+    forward_kinematics_numeric = lambdify(Q, position_vector, "numpy")
+    jacobian_numeric = lambdify(Q, Jacobian, "numpy")
+
+    def inverse_kinematics(desired_coordinates, initial_guess):
+        max_iterations = 10000
+        tolerance = 1e-6
+        q = np.array(initial_guess, dtype=float)
+        for iteration in range(max_iterations):
+            current_pos = np.array(forward_kinematics_numeric(*q), dtype=float).flatten()
+            error = np.array(desired_coordinates) - current_pos
+            if np.linalg.norm(error) < tolerance:
+                print(f"Converged in {iteration} iterations.")
+                return q
+            J_inv = inverse_jacobian(q)
+            delta_q = J_inv.dot(error)
+            q += delta_q
+        print("Reached maximum iterations without convergence.")
+        return q
+
+    def joint_traj(q0, qf, qdot0, qdotf, Tf, Ts):
+        # Time vector
+        t = np.arange(0, Tf + Ts, Ts)
+        
+        # Number of joints
+        n_joints = len(q0)
+        
+        # Initialize joint trajectory
+        joint_angles = np.zeros((len(t), n_joints))
+        
+        for i in range(n_joints):
+            # Compute coefficients for cubic polynomial
+            a0 = q0[i]
+            a1 = qdot0[i]
+            a2 = (3 * (qf[i] - q0[i]) / Tf**2) - (2 * qdot0[i] + qdotf[i]) / Tf
+            a3 = (-2 * (qf[i] - q0[i]) / Tf*3) + (qdot0[i] + qdotf[i]) / Tf*2
+            
+            # Compute trajectory for joint i
+            joint_angles[:, i] = a0 + a1 * t + a2 * t*2 + a3 * t*3
+        
+        return joint_angles
+
+    def end_effector_trajectory(q_traj, forward_kinematics_numeric):
+    
+        ee_traj = []
+        for q in q_traj:
+            # Convert joint angles to a list of numerical values
+            q_numeric = np.array(q, dtype=np.float64)
+            # Compute forward kinematics for each joint configuration
+            pos = forward_kinematics_numeric(*q_numeric)
+            ee_traj.append(pos)
+        return np.array(ee_traj)
+
+
+    def wrap_to_2pi(angle):
+        return angle % (2 * np.pi)
+
+    # Function to clamp angles for Q2, Q3, Q4 into [0, pi]
+    def clamp_to_pi(angle):
+        return np.clip(angle, -np.pi/2, np.pi/2)
+
+    # Apply constraints to the entire joint_angles array
+    def limit_joint_angles(joint_angles):
+        # Wrap Q1 (column 0) to [0, 2*pi]
+        joint_angles[:, 0] = [wrap_to_2pi(angle) for angle in joint_angles[:, 0]]
+        
+        # Clamp Q2, Q3, Q4 (columns 1, 2, 3) to [0, pi]
+        joint_angles[:, 1] = [clamp_to_pi(angle) for angle in joint_angles[:, 1]]
+        joint_angles[:, 2] = [clamp_to_pi(angle) for angle in joint_angles[:, 2]]
+        joint_angles[:, 3] = [clamp_to_pi(angle) for angle in joint_angles[:, 3]]
+        
+        return joint_angles
+    
+    #First Trajectory
+    q0 = [0, 0, 0, 0]          # Initial joint angles
+    qf = [90*(3.141592653589793/180), 50*(3.141592653589793/180), -20*(3.141592653589793/180), -80*(3.141592653589793/180)]  # Final joint angles
+    qdot0 = [0, 0, 0, 0]       # Initial velocities
+    qdotf = [0, 0, 0, 0]       # Final velocities
+    Tf = 5                    # Total time
+    Ts = 0.1                   # Sampling time
+
+    joint_angles = joint_traj(q0, qf, qdot0, qdotf, Tf, Ts)
+
+    # Step 2: Compute End-Effector Trajectory
+    ee_trajectory = end_effector_trajectory(joint_angles, forward_kinematics_numeric)
+
+    joint_angles = limit_joint_angles(joint_angles)
+
+
+
+    # Print Results
+    self.joint_angles = joint_angles.astype(float)
+    
+    self.joint_angles = np.degrees(joint_angles)
+    print("Joint Trajectory1:\n", self.joint_angles)
+    
+    
+    
+    #Second Trajectory
+    q02 = [90*(3.141592653589793/180), 50*(3.141592653589793/180), -20*(3.141592653589793/180), -80*(3.141592653589793/180)]          # Initial joint angles
+    qf2 = [90*(3.141592653589793/180), 30*(3.141592653589793/180), -40*(3.141592653589793/180), -80*(3.141592653589793/180)]  # Final joint angles
+    qdot02 = [0, 0, 0, 0]       # Initial velocities
+    qdotf2 = [0, 0, 0, 0]       # Final velocities
+    Tf2 = 5                    # Total time
+    Ts2 = 0.1                   # Sampling time
+
+    # Step 1: Generate Joint Space Trajectory
+    joint_angles2 = joint_traj(q02, qf2, qdot02, qdotf2, Tf2, Ts2)
+
+    # Step 2: Compute End-Effector Trajectory
+    ee_trajectory2 = end_effector_trajectory(joint_angles2, forward_kinematics_numeric)
+
+    joint_angles2 = limit_joint_angles(joint_angles2)
+
+
+
+    # Print Results
+    self.joint_angles2 = joint_angles2.astype(float)
+    
+    self.joint_angles2 = np.degrees(joint_angles2)
+    print("Joint Trajectory 2:\n", self.joint_angles2)
+    
+    
+    #Third Trajectory
+    q03 = [90*(3.141592653589793/180), 30*(3.141592653589793/180), -40*(3.141592653589793/180), -80*(3.141592653589793/180)]  # Final joint angles    
+    qf3 = [90*(3.141592653589793/180), 50*(3.141592653589793/180), -20*(3.141592653589793/180), -80*(3.141592653589793/180)]          # Initial joint angles
+    qdot03 = [0, 0, 0, 0]       # Initial velocities
+    qdotf3 = [0, 0, 0, 0]       # Final velocities
+    Tf3 = 5                    # Total time
+    Ts3 = 0.1                   # Sampling time
+
+    # Step 1: Generate Joint Space Trajectory
+    joint_angles3 = joint_traj(q03, qf3, qdot03, qdotf3, Tf3, Ts3)
+
+    # Step 2: Compute End-Effector Trajectory
+    ee_trajectory3 = end_effector_trajectory(joint_angles3, forward_kinematics_numeric)
+
+    joint_angles3 = limit_joint_angles(joint_angles3)
+
+
+
+    # Print Results
+    self.joint_angles3 = joint_angles3.astype(float)
+    
+    self.joint_angles3 = np.degrees(joint_angles3)
+    print("Joint Trajectory3:\n", self.joint_angles3)
+    
+    
+    #Fourth  Trajectory
+    q04 = [90*(3.141592653589793/180), 50*(3.141592653589793/180), -20*(3.141592653589793/180), -80*(3.141592653589793/180)]  # Initial joint angles
+    qf4 = [-90*(3.141592653589793/180), 40*(3.141592653589793/180), -80*(3.141592653589793/180), 40*(3.141592653589793/180)]  # Final joint angles    
+    qdot04 = [0, 0, 0, 0]       # Initial velocities
+    qdotf4 = [0, 0, 0, 0]       # Final velocities
+    Tf4 = 5                    # Total time
+    Ts4 = 0.1                   # Sampling time
+
+    # Step 1: Generate Joint Space Trajectory
+    joint_angles4 = joint_traj(q04, qf4, qdot04, qdotf4, Tf4, Ts4)
+
+    # Step 2: Compute End-Effector Trajectory
+    ee_trajectory4 = end_effector_trajectory(joint_angles4, forward_kinematics_numeric)
+
+    joint_angles4 = limit_joint_angles(joint_angles4)
+
+
+
+    # Print Results
+    self.joint_angles4 = joint_angles4.astype(float)
+    
+    self.joint_angles4 = np.degrees(joint_angles4)
+    print("Joint Trajectory4:\n", self.joint_angles4)
+    
+    
+    #Fifth  Trajectory
+    q05 = [-90*(3.141592653589793/180), 40*(3.141592653589793/180), -80*(3.141592653589793/180), 40*(3.141592653589793/180)]  # Final joint angles    
+    qf5 = [-90*(3.141592653589793/180), 20*(3.141592653589793/180), -40*(3.141592653589793/180), 20*(3.141592653589793/180)]  # Initial joint angles
+    qdot05 = [0, 0, 0, 0]       # Initial velocities
+    qdotf5 = [0, 0, 0, 0]       # Final velocities
+    Tf5 = 3                    # Total time
+    Ts5 = 0.1                   # Sampling time
+
+    # Step 1: Generate Joint Space Trajectory
+    joint_angles5 = joint_traj(q05, qf5, qdot05, qdotf5, Tf5, Ts5)
+
+    # Step 2: Compute End-Effector Trajectory
+    ee_trajectory5 = end_effector_trajectory(joint_angles5, forward_kinematics_numeric)
+
+    joint_angles5 = limit_joint_angles(joint_angles5)
+
+
+                            
+    # Print Results
+    self.joint_angles5 = joint_angles5.astype(float)
+    self.joint_angles5 = np.degrees(joint_angles5)
+    print("Joint Trajectory4:\n", self.joint_angles5)
+    
+    #Sixth  Trajectory
+    q06 = [-90*(3.141592653589793/180), 20*(3.141592653589793/180), -40*(3.141592653589793/180), 20*(3.141592653589793/180)]  # Initial joint angles
+    qf6 = [-90*(3.141592653589793/180), 40*(3.141592653589793/180), -80*(3.141592653589793/180), 40*(3.141592653589793/180)]  # Final joint angles    
+    qdot06 = [0, 0, 0, 0]       # Initial velocities
+    qdotf6 = [0, 0, 0, 0]       # Final velocities
+    Tf6 = 3                    # Total time
+    Ts6 = 0.1                   # Sampling time
+
+    # Step 1: Generate Joint Space Trajectory
+    joint_angles6 = joint_traj(q06, qf6, qdot06, qdotf6, Tf6, Ts6)
+
+    # Step 2: Compute End-Effector Trajectory
+    ee_trajectory6 = end_effector_trajectory(joint_angles6, forward_kinematics_numeric)
+
+    joint_angles6 = limit_joint_angles(joint_angles6)
+
+
+
+    # Print Results
+    self.joint_angles6 = joint_angles6.astype(float)
+    
+    self.joint_angles6 = np.degrees(joint_angles6)
+    print("Joint Trajectory6:\n", self.joint_angles6)
+    
+    #Seventh  Trajectory
+    qf7 = [0,0,0,0]  # Initial joint angles
+    q07 = [-90*(3.141592653589793/180), 40*(3.141592653589793/180), -80*(3.141592653589793/180), 40*(3.141592653589793/180)]  # Final joint angles    
+    qdot07 = [0, 0, 0, 0]       # Initial velocities
+    qdotf7 = [0, 0, 0, 0]       # Final velocities
+    Tf7 = 5                    # Total time
+    Ts7 = 0.1                   # Sampling time
+
+    # Step 1: Generate Joint Space Trajectory
+    joint_angles7 = joint_traj(q07, qf7, qdot07, qdotf7, Tf7, Ts7)
+
+    # Step 2: Compute End-Effector Trajectory
+    ee_trajectory7 = end_effector_trajectory(joint_angles7, forward_kinematics_numeric)
+
+    joint_angles7 = limit_joint_angles(joint_angles7)
+
+
+
+    # Print Results
+    self.joint_angles7 = joint_angles7.astype(float)
+        
+    self.joint_angles7 = np.degrees(joint_angles7)
+    print("Joint Trajectory 7:\n", self.joint_angles7)
+    
+    
+    #print("End Effector Trajectory:\n", ee_trajectory)
+    self.joint_anglesT= np.concatenate((self.joint_angles,self.joint_angles2,self.joint_angles3,self.joint_angles4,self.joint_angles5,self.joint_angles6,self.joint_angles7))
+                                                            
+    print("Total Joint trajectory:\n",self.joint_anglesT)
+    
+def sysCall_actuation():
+    sim = require('sim')
+    current_time = sim.getSimulationTime()
+    if current_time < self.duration:
+        # Calculate the index of the trajectory array
+        index = int((current_time / self.duration) * len(self.joint_anglesT))
+        joint_anglesT = self.joint_anglesT[index]
+        # Set joint positions
+        for i, handle in enumerate(self.joint_handles):
+            sim.setJointPosition(handle, np.radians(joint_anglesT[i]))
+            
+    else:
+        # At the end of the trajectory, set final positions
+        final_anglesT = self.joint_anglesT[-1]
+        for i, handle in enumerate(self.joint_handles):
+            sim.setJointPosition(handle, np.radians(final_anglesT[i]))
+    
+    
+
+
+def sysCall_cleanup():
+    EHandle = sim.getObject("../Grip_respondable")
+    base_handle = sim.getObject("../base_link_visual/ReferenceFrame")
+    Eposition = sim.getObjectPosition(EHandle, base_handle)
+    
+    #print("Final End-Effector Position:", EE_position)
